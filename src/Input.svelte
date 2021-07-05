@@ -3,19 +3,13 @@
 
   let value = "";
   let response = [];
-  let loading = false;
   const handleInput = (event) => (value = event.target.value);
 
   $: if (value.length > 2) {
-    loading = true;
-    fetch(`https://www.omdbapi.com/?s=${value}&apikey=daa402f6`)
-      .then((res) => res.json())
-      .then((apiResponse) => {
-        // if apiResponse has Search field is assigned, else throws an empty array
-        response = apiResponse.Search || [];
-        console.log(apiResponse);
-        loading = false;
-      });
+    response = fetch(`https://www.omdbapi.com/?s=${value}&apikey=daa402f6`)
+      .then(res => !res.ok() && new Error('Something bad happened with the fetching of movies'))
+      .then(res => res.json())
+      .then((apiResponse) => apiResponse.Search || []);
   }
 </script>
 
@@ -25,10 +19,10 @@
   on:input={handleInput}
   placeholder="Search movies..."
 />
-{#if loading}
+{#await response}
   <strong>Loading...</strong>
-{:else}
-  {#each response as { Title, Poster, Year }, index}
+{:then movies}
+  {#each movies as { Title, Poster, Year }, index}
     <Movie
       index={index}
       title={Title}
@@ -38,4 +32,7 @@
   {:else}
     <strong>We don't have movies</strong>
   {/each}
-{/if}
+{:catch error}
+  <p>❌ Theres has been an error:</p>
+  <p>{error}</p>
+{/await}
